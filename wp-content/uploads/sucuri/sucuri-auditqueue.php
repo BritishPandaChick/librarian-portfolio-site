@@ -20,3 +20,8 @@ exit(0);
 1546643078_5405:"Critical: BritishPandaChick, 127.0.0.1; WordPress updated to version: 5.0.2"
 1546643186_0388:"Warning: BritishPandaChick, 127.0.0.1; Plugins updated: (multiple entries): Akismet Anti-Spam (v4.0.8; akismet\/akismet.php),Sucuri Security - Auditing, Malware Scanner and Hardening (v1.8.18; sucuri-scanner\/sucuri.php)"
 1546643474_7139:"Warning: BritishPandaChick, 127.0.0.1; Themes updated: (multiple entries): Make (v1.9.15; make),Twenty Fifteen (v2.0; twentyfifteen),Twenty Seventeen (v1.7; twentyseventeen),Twenty Sixteen (v1.5; twentysixteen)"
+1547605347_0907:"Notice: 127.0.0.1; User authentication succeeded: BritishPandaChick"
+1547605364_0258:"Warning: BritishPandaChick, 127.0.0.1; Themes updated: (multiple entries): Make (v1.9.21; make),Twenty Fifteen (v2.2; twentyfifteen),Twenty Nineteen (v1.1; twentynineteen),Twenty Seventeen (v1.9; twentyseventeen),Twenty Sixteen (v1.7; twentysixteen)"
+1547605428_2898:"Warning: 127.0.0.1; Post deleted: (multiple entries): Post id: 54,Post author: 1,Post type: post,Post status: auto-draft,Post inserted: 2019-01-04 23:04:27,Post modified: 2019-01-04 23:04:27,Post guid: http:\/\/localhost\/joeportfoliosite\/?p=54,Post title: Auto Draft"
+1547605430_0967:"Critical: BritishPandaChick, 127.0.0.1; WordPress updated to version: 5.0.3"
+1547605472_8252:"Notice: BritishPandaChick, 127.0.0.1; Post status has been changed; details: ID: 55,Old status: new,New status: auto-draft,Title: Auto Draft"
