@@ -93,6 +93,8 @@ final class Tag_Manager extends Module
 
 		// Tag Manager tag placement logic.
 		add_action( 'template_redirect', $this->get_method_proxy( 'register_tag' ) );
+		// Filter the Analytics `canUseSnippet` value.
+		add_action( 'googlesitekit_analytics_can_use_snippet', $this->get_method_proxy( 'can_analytics_use_snippet' ) );
 	}
 
 	/**
@@ -106,23 +108,6 @@ final class Tag_Manager extends Module
 		return array(
 			'https://www.googleapis.com/auth/tagmanager.readonly',
 		);
-	}
-
-	/**
-	 * Returns all module information data for passing it to JavaScript.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array Module information data.
-	 */
-	public function prepare_info_for_js() {
-		$info = parent::prepare_info_for_js();
-
-		$info['provides'] = array(
-			__( 'Create tags without updating code', 'google-site-kit' ),
-		);
-
-		return $info;
 	}
 
 	/**
@@ -636,6 +621,26 @@ final class Tag_Manager extends Module
 				$tag->register();
 			}
 		}
+	}
+
+	/**
+	 * Filters whether or not the Analytics module's snippet should be controlled by its `useSnippet` setting.
+	 *
+	 * @since 1.28.0
+	 *
+	 * @param boolean $original_value Original value of useSnippet setting.
+	 * @return boolean Filtered value.
+	 */
+	private function can_analytics_use_snippet( $original_value ) {
+		$settings = $this->get_settings()->get();
+
+		// This disables the Analytics snippet if there is a GA tag in the
+		// configured containers, and the GTM snippet is enabled.
+		if ( ! empty( $settings['gaPropertyID'] ) && $settings['useSnippet'] ) {
+			return false;
+		}
+
+		return $original_value;
 	}
 
 }

@@ -146,25 +146,6 @@ final class Analytics extends Module
 	}
 
 	/**
-	 * Returns all module information data for passing it to JavaScript.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return array Module information data.
-	 */
-	public function prepare_info_for_js() {
-		$info = parent::prepare_info_for_js();
-
-		$info['provides'] = array(
-			__( 'Audience overview', 'google-site-kit' ),
-			__( 'Top pages', 'google-site-kit' ),
-			__( 'Top acquisition channels', 'google-site-kit' ),
-		);
-
-		return $info;
-	}
-
-	/**
 	 * Checks whether the module is connected.
 	 *
 	 * A module being connected means that all steps required as part of its activation are completed.
@@ -957,6 +938,26 @@ final class Analytics extends Module
 		}
 
 		$dimension_filter_clauses = array();
+
+		$hostnames = array_values(
+			array_unique(
+				array_map(
+					function ( $site_url ) {
+						return wp_parse_url( $site_url, PHP_URL_HOST );
+					},
+					$this->permute_site_url( $this->context->get_reference_site_url() )
+				)
+			)
+		);
+
+		$dimension_filter = new Google_Service_AnalyticsReporting_DimensionFilter();
+		$dimension_filter->setDimensionName( 'ga:hostname' );
+		$dimension_filter->setOperator( 'IN_LIST' );
+		$dimension_filter->setExpressions( $hostnames );
+		$dimension_filter_clause = new Google_Service_AnalyticsReporting_DimensionFilterClause();
+		$dimension_filter_clause->setFilters( array( $dimension_filter ) );
+		$dimension_filter_clauses[] = $dimension_filter_clause;
+
 		if ( ! empty( $args['dimension_filters'] ) ) {
 			$dimension_filters       = $args['dimension_filters'];
 			$dimension_filter_clause = new Google_Service_AnalyticsReporting_DimensionFilterClause();
@@ -976,9 +977,7 @@ final class Analytics extends Module
 			$dimension_filter_clauses[] = $dimension_filter_clause;
 		}
 
-		if ( ! empty( $dimension_filter_clauses ) ) {
-			$request->setDimensionFilterClauses( $dimension_filter_clauses );
-		}
+		$request->setDimensionFilterClauses( $dimension_filter_clauses );
 
 		if ( ! empty( $args['row_limit'] ) ) {
 			$request->setPageSize( $args['row_limit'] );

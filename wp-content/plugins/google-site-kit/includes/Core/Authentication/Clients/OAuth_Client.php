@@ -272,7 +272,7 @@ final class OAuth_Client {
 		// This is called when the client refreshes the access token on-the-fly.
 		$client->setTokenCallback(
 			function( $cache_key, $access_token ) use ( $client ) {
-				$expires_in = HOUR_IN_SECONDS; // Sane default, Google OAuth tokens are typically valid for an hour.
+				$expires_in = HOUR_IN_SECONDS; // Reasonable default, Google OAuth tokens are typically valid for an hour.
 				$created    = 0; // This will be replaced with the current timestamp when saving.
 
 				// Try looking up the real values if possible.
@@ -697,6 +697,9 @@ final class OAuth_Client {
 		$refresh_token = $this->get_client()->getRefreshToken();
 		$this->set_refresh_token( $refresh_token );
 
+		// Store the previously granted scopes for use in the action below before they're updated.
+		$previous_scopes = $this->get_granted_scopes();
+
 		// Update granted scopes.
 		if ( isset( $token_response['scope'] ) ) {
 			$scopes = explode( ' ', sanitize_text_field( $token_response['scope'] ) );
@@ -722,23 +725,22 @@ final class OAuth_Client {
 
 		$this->refresh_profile_data( 2 * MINUTE_IN_SECONDS );
 
-		// TODO: In the future, once the old authentication mechanism no longer exists, this check can be removed.
-		// For now the below action should only fire for the proxy despite not clarifying that in the hook name.
-		if ( $this->credentials->using_proxy() ) {
-			/**
-			 * Fires when the current user has just been authorized to access Google APIs.
-			 *
-			 * In other words, this action fires whenever Site Kit has just obtained a new set of access token and
-			 * refresh token for the current user, which may happen to set up the initial connection or to request
-			 * access to further scopes.
-			 *
-			 * @since 1.3.0
-			 * @since 1.6.0 The $token_response parameter was added.
-			 *
-			 * @param array $token_response Token response data.
-			 */
-			do_action( 'googlesitekit_authorize_user', $token_response );
-		}
+		/**
+		 * Fires when the current user has just been authorized to access Google APIs.
+		 *
+		 * In other words, this action fires whenever Site Kit has just obtained a new set of access token and
+		 * refresh token for the current user, which may happen to set up the initial connection or to request
+		 * access to further scopes.
+		 *
+		 * @since 1.3.0
+		 * @since 1.6.0 The $token_response parameter was added.
+		 * @since 1.30.0 The $scopes and $previous_scopes parameters were added.
+		 *
+		 * @param array $token_response Token response data.
+		 * @param string[] $scopes List of scopes.
+		 * @param string[] $previous_scopes List of previous scopes.
+		 */
+		do_action( 'googlesitekit_authorize_user', $token_response, $scopes, $previous_scopes );
 
 		// This must happen after googlesitekit_authorize_user as the permissions checks depend on
 		// values set which affect the meta capability mapping.
