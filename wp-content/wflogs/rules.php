@@ -2892,4 +2892,69 @@ $this->rules[363] = wfWAFRule::create($this, 363, NULL, 'bypass', '100', 'WP-Buy
 )),
 wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
 ))))));
+$this->rules[364] = wfWAFRule::create($this, 364, NULL, 'auth-bypass', '100', 'WooCommerce Product Filter by WooBeWoo <= 1.4.9 Unprotected AJAXs', 0, 'block', new wfWAFRuleComparisonGroup(new wfWAFRuleComparison($this, 'equals', 'wpf', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'pl'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'pl'), array (
+)))), new wfWAFRuleLogicalOperator('AND'), new wfWAFRuleComparisonGroup(new wfWAFRuleComparison($this, 'equals', 'save', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'action'), array (
+)))), new wfWAFRuleLogicalOperator('OR'), new wfWAFRuleComparison($this, 'equals', 'deleteByID', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'action'), array (
+)))), new wfWAFRuleLogicalOperator('OR'), new wfWAFRuleComparison($this, 'equals', 'drawFilterAjax', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'action'), array (
+)))), new wfWAFRuleLogicalOperator('OR'), new wfWAFRuleComparison($this, 'equals', 'removeGroup', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'action'), array (
+)))), new wfWAFRuleLogicalOperator('OR'), new wfWAFRuleComparison($this, 'equals', 'saveGroup', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'action'), array (
+)))), new wfWAFRuleLogicalOperator('OR'), new wfWAFRuleComparison($this, 'equals', 'createTable', array(wfWAFRuleComparisonSubject::create($this, array('request.queryString', 'action'), array (
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'action'), array (
+))))), new wfWAFRuleLogicalOperator('AND'), new wfWAFRuleComparison($this, 'currentUserIsNot', 'administrator', array(wfWAFRuleComparisonSubject::create($this, 'server.empty', array (
+))))));
+$this->rules[365] = wfWAFRule::create($this, 365, NULL, 'obji', '100', 'Thrive Plugins < 2021-05-11 Object Injection', 0, 'block', new wfWAFRuleComparisonGroup(new wfWAFRuleComparison($this, 'match', '/(^|;|{|})(?:O|C):\\d+:"(?!stdClass")[^"]+":/', array(wfWAFRuleComparisonSubject::create($this, array('request.body', '__tcb_lg_msg'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', '__tcb_lg_fc'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'consent_config'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'tve_mapping'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'tve_labels'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+)),
+wfWAFRuleComparisonSubject::create($this, array('request.body', 'config'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+))))));
+$this->rules[366] = wfWAFRule::create($this, 366, NULL, 'priv-esc', '100', 'Thrive Plugins < 2021-05-11 Privesc', 0, 'block', new wfWAFRuleComparisonGroup(new wfWAFRuleComparison($this, 'match', '/\\$trusted/', array(wfWAFRuleComparisonSubject::create($this, array('request.body', 'tve_mapping'), array (
+  0 => 
+  array (
+    0 => 'base64decode',
+  ),
+))))));
 ?>
