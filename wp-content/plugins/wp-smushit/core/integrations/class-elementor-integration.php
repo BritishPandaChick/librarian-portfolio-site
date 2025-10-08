@@ -35,6 +35,7 @@ class Elementor_Integration extends Controller {
 		$this->transformer = new Transformer();
 
 		$this->register_filter( 'elementor/frontend/the_content', array( $this, 'transform_elementor_content' ) );
+		//$this->register_action( 'elementor/element/parse_css', array( $this, 'transform_elementor_css_element' ),10 );
 		$this->register_filter( 'wp_smush_media_item_size', array( $this, 'initialize_elementor_custom_size' ), 10, 4 );
 	}
 
@@ -77,9 +78,64 @@ class Elementor_Integration extends Controller {
 		return preg_replace_callback(
 			"#(?:https?:)?{$content_url}[^'|,;\"]*\.(?:jpe?g|png|gif|webp)#m",
 			function ( $matches ) {
-				return addcslashes( $this->transform_url( stripslashes( $matches[0] ) ), '/' );
+				return addcslashes( $this->transform_url( $this->sanitize_json_url( $matches[0] ) ), '/' );
 			},
 			$element_data
+		);
+	}
+
+	/**
+	 * Replace image URLs in Elementor CSS with transformed (e.g., CDN/WebP) versions.
+	 *
+	 * @param object $post_css_file Elementor post CSS file object.
+	 */
+	public function transform_elementor_css_element( $post_css_file ) {
+		if ( ! $post_css_file || ! method_exists( $post_css_file, 'get_stylesheet' ) ) {
+			return;
+		}
+
+		$stylesheet  = $post_css_file->get_stylesheet();
+		$css_content = (string) $stylesheet;
+
+		if ( empty( $css_content ) ) {
+			return;
+		}
+
+		$transformed = $this->transform_css_urls( $css_content );
+
+		if ( method_exists( $stylesheet, 'add_raw_css' ) ) {
+			$stylesheet->add_raw_css( $transformed );
+		}
+	}
+
+
+	/**
+	 * Replace image URLs in CSS with transformed (e.g., CDN/WebP) versions.
+	 *
+	 * @param string $css_content Raw CSS content.
+	 * @return string Transformed CSS content.
+	 */
+	public function transform_css_urls( string $css_content ): string {
+		if ( empty( $css_content ) || ! preg_match( '/url\(/i', $css_content ) ) {
+			return $css_content;
+		}
+
+		return preg_replace_callback(
+			'/url\(([^)]+)\)/i',
+			function ( $matches ) {
+				$url = trim( $matches[1], '\'"' );
+
+				if ( ! $url || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
+					return $matches[0];
+				}
+
+				$transformed_url = $this->transform_url( $url );
+
+				return $transformed_url && is_string( $transformed_url )
+					? 'url(' . esc_url_raw( $transformed_url ) . ')'
+					: $matches[0];
+			},
+			$css_content
 		);
 	}
 
@@ -109,5 +165,27 @@ class Elementor_Integration extends Controller {
 	private function prepare_url( $url ) {
 		$url = untrailingslashit( preg_replace( '/https?:/', '', $url ) );
 		return addcslashes( preg_quote( $url, '/' ), '/' );
+	}
+
+	/**
+	 * Cleans JSON-encoded URLs by removing extra slashes.
+	 * Returns original string if decoding fails.
+	 *
+	 * @param string $url The JSON-encoded URL string to process
+	 * @return string The decoded URL with slashes normalized, or original string on failure
+	 * @since 3.8.0
+	 */
+	private function sanitize_json_url( $url ) {
+		try {
+			$decoded = json_decode( '"' . str_replace( '"', '\"', $url ) . '"' );
+
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				throw new Exception( 'Invalid JSON' );
+			}
+
+			return str_replace( '\/', '/', $decoded );
+		} catch ( Exception $e ) {
+			return $url;
+		}
 	}
 }

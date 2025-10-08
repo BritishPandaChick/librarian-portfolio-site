@@ -1,8 +1,31 @@
-/* global ajaxurl */
+/* global ajaxurl, WP_Smush, wp_smush_msgs */
 
 import Smush from '../smush/smush';
 import {GlobalStats} from "../common/globalStats";
 import SmushProgress from "../common/progressbar";
+import Fetcher from '../utils/fetcher';
+
+WP_Smush.adminAjax = {
+	disconnectSite: ( btn ) => {
+		if ( btn ) {
+			btn.classList.add( 'sui-button-onload-text' );
+		}
+
+		return Fetcher.settings.disconnectSite().then( ( res ) => {
+			if ( res.success ) {
+				window.location.search = window.location.search + `&smush-notice=site-disconnected`;
+			} else {
+				WP_Smush.helpers.showNotice( res );
+			}
+		} ).catch( ( error ) => {
+			WP_Smush.helpers.showNotice( error );
+		} ).finally( () => {
+			if ( btn ) {
+				btn.classList.remove( 'sui-button-onload-text' );
+			}
+		} );
+	}
+};
 
 const remove_element = function (el, timeout) {
 	if (typeof timeout === 'undefined') {
@@ -14,6 +37,21 @@ const remove_element = function (el, timeout) {
 		});
 	});
 };
+
+/**
+ * Show disconnected site success message.
+ */
+document.addEventListener(
+	'on-smush-site-disconnected-notice',
+	() => {
+		WP_Smush.helpers.showNotice(
+			wp_smush_msgs.site_disconnected_success,
+			{
+				type: 'success',
+			}
+		);
+	}
+);
 
 jQuery(function ($) {
 	'use strict';
@@ -467,6 +505,24 @@ jQuery(function ($) {
 	$('#all-image-sizes').on('change', function () {
 		$('input[name^="wp-smush-image_sizes"]').prop('checked', true);
 	});
+	
+	/**
+	 * When 'All' is selected for the Media type, select all available media type.
+	 *
+	 * @since 3.21.0
+	 */
+	$('#all-media-type').on('change', function () {
+		$('.lazyload-media-type-input').prop('checked', true);
+	});
+	
+	/**
+	 * When 'All' is selected for the Output location, select all available location.
+	 *
+	 * @since 3.21.0
+	 */
+	$('#all-output-location').on('change', function () {
+		$('input[name^="output"]').prop('checked', true);
+	});
 
 	/**
 	 * Handles the tabs navigation on mobile.
@@ -492,6 +548,38 @@ jQuery(function ($) {
 			location.reload();
 		});
 	});
+	
+	/**
+	 * Handle clear LCP data button click (Settings)
+	 *
+	 * @since 3.20.0
+	 */
+	$( '#smush-clear-lcp-data' ).on( 'click', function ( e ) {
+		e.preventDefault();
+		
+		const $button = $( this );
+		$button.addClass( 'sui-button-onload' );
+		
+		$.post(
+			 ajaxurl,
+			 {
+				 action: 'clear_all_lcp_data',
+				 _ajax_nonce: wp_smush_msgs.nonce
+			 }
+		 )
+		 .done( function ( response ) {
+			 WP_Smush.helpers.showNotice( 'LCP data cleared successfully.', {
+				 type: 'success',
+				 autoclose: true,
+			 } );
+		 } )
+		 .fail( function () {
+			 WP_Smush.helpers.showErrorNotice( 'Failed to clear LCP data. Please try again.' );
+		 } )
+		 .always( function () {
+			 $button.removeClass( 'sui-button-onload' );
+		 } );
+	} );
 
 	/** Handle smush button click **/
 	$('body').on(
@@ -674,9 +762,9 @@ jQuery(function ($) {
 		const settings_wrap = $('#smush-resize-settings-wrap');
 
 		if (self.is(':checked')) {
-			settings_wrap.show();
+			settings_wrap.removeClass('sui-hidden');
 		} else {
-			settings_wrap.hide();
+			settings_wrap.addClass('sui-hidden');
 		}
 	});
 
@@ -840,7 +928,24 @@ jQuery(function ($) {
 			return;
 		}
 		updateLossyLevelInSummaryBox();
+		updatePreloadImageInSummaryBox();
 	} );
+	
+	// Update preload image status in the summary box.
+	const updatePreloadImageInSummaryBox = () => {
+		const summaryBox            = document.querySelector( '.wp-smush-preload-images-status' );
+		const preloadImagesCheckbox = document.getElementById( 'preload-images' );
+		
+		if ( ! summaryBox || ! preloadImagesCheckbox ) {
+			return;
+		}
+		
+		const isActive = preloadImagesCheckbox.checked;
+		
+		summaryBox.innerText = isActive ? 'Active' : 'Inactive';
+		
+		summaryBox.classList.toggle('sui-tag-green', isActive);
+	};
 
 
 	const toggleNoscriptFallbackOnNativeLazyloadChange = () => {
@@ -864,4 +969,49 @@ jQuery(function ($) {
 		} );
 	}
 	toggleNoscriptFallbackOnNativeLazyloadChange();
+	
+	const togglePreloadChange = () => {
+		const preloadInput     = document.querySelector( '#preload-images-settings-row #preload-images' );
+		const excludeRow       = document.getElementById( 'preload-exclude-settings-row' );
+		const fetchpriorityRow = document.getElementById( 'preload-images-fetchpriority-settings-row' );
+		
+		if ( ! preloadInput || ( ! excludeRow && ! fetchpriorityRow ) ) {
+			return;
+		}
+		
+		preloadInput.addEventListener( 'change', ( e ) => {
+			const isChecked                = e.target.checked;
+			excludeRow.style.display       = isChecked ? 'flex' : 'none';
+			fetchpriorityRow.style.display = isChecked ? 'flex' : 'none';
+		} );
+	};
+	
+	togglePreloadChange();
+
+	const cleanUrlParams = () => {
+		const url = new URL( window.location.href );
+		const params = url.searchParams;
+		const hash = url.hash;
+
+		const hashesToRemove = [ '#directory_smush-settings-row' ];
+
+		// Remove all params that start with 'smush__'.
+		for ( const [ key ] of params ) {
+			if ( key.startsWith( 'smush__' ) ) {
+				params.delete( key );
+			}
+		}
+
+		// Remove specific hashes.
+		hashesToRemove.forEach( ( hashToRemove ) => {
+			if ( hash === hashToRemove ) {
+				url.hash = '';
+			}
+		} );
+
+		// Update the URL without reloading the page.
+		window.history.replaceState( {}, '', url.toString() );
+	}
+
+	cleanUrlParams();
 });
